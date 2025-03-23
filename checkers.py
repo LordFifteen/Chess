@@ -1,16 +1,3 @@
-"""Простая реализация игры в шашки с проверкой ходов и функцией отмены.
-
-Этот модуль содержит классы для представления игры в шашки, включая доску, ходы
-и состояние игры. Он позволяет двум игрокам играть в шашки в консоли с поддержкой
-отмены ходов.
-
-Классы:
-    Move: Представляет ход в игре.
-    CheckersBoard: Представляет доску для шашек и управляет перемещением шашек.
-    CheckersGame: Управляет процессом игры и взаимодействием с игроками.
-"""
-
-
 class Move:
     """Представляет ход в игре в шашки.
 
@@ -127,30 +114,30 @@ class CheckersBoard:
         piece = self.board[y1][x1]
         target = self.board[y2][x2]
 
-        # Проверка, что игрок двигает свою шашку
+        #Проверка, что игрок двигает свою шашку
         if turn == 'white' and piece != 'w':
             return False, None
         if turn == 'black' and piece != 'b':
             return False, None
 
-        # Проверка, что целевая клетка пуста
+        #Проверка, что целевая клетка пуста
         if target != ' ':
             return False, None
 
-        # Проверка, что движение по диагонали
+        #Проверка, что движение по диагонали
         dx = abs(x2 - x1)
         dy = abs(y2 - y1)
 
         if dx != dy:
             return False, None
 
-        # Обычные шашки могут двигаться только вперед
+        #Обычные шашки могут двигаться только вперед
         if piece == 'w' and y2 >= y1:
             return False, None
         if piece == 'b' and y2 <= y1:
             return False, None
 
-        # Проверка на прыжок через шашку
+        #Проверка на прыжок через шашку
         if dx == 2:
             jump_x = (x1 + x2) // 2
             jump_y = (y1 + y2) // 2
@@ -161,9 +148,9 @@ class CheckersBoard:
             if (turn == 'white' and jumped_piece != 'b') or (turn == 'black' and jumped_piece != 'w'):
                 return False, None
 
-            return True, (jump_x, jump_y)  # Возвращаем True и позицию съеденной шашки
+            return True, (jump_x, jump_y)  #Возвращаем True и позицию съеденной шашки
 
-        return True, None  # Обычный ход без съедания
+        return True, None  #Обычный ход без съедания
 
     def get_possible_moves(self, turn):
         """Возвращает все возможные ходы для текущего игрока.
@@ -226,7 +213,7 @@ class CheckersGame:
             print(f"Ход {'белых' if self.turn == 'white' else 'черных'}")
             move = input("Введите ход (например, 'e3 f4') или 'undo' для отката: ").strip().split()
 
-            # Обработка отмены хода
+            #Обработка отмены хода
             if move[0] == 'undo':
                 if not self.history:
                     print("Нет ходов для отката.")
@@ -236,12 +223,12 @@ class CheckersGame:
                     self.turn = 'black' if self.turn == 'white' else 'white'
                 continue
 
-            # Проверка корректности ввода
+            #Проверка корректности ввода
             if len(move) != 2:
                 print("Некорректный ввод. Попробуйте снова.")
                 continue
 
-            # Преобразование и проверка хода
+            #Преобразование и проверка хода
             start = self.parse_move(move[0])
             end = self.parse_move(move[1])
 
@@ -250,7 +237,7 @@ class CheckersGame:
                 print("Недопустимый ход. Попробуйте снова.")
                 continue
 
-            # Выполнение хода
+            #Выполнение хода
             move_obj = self.board.move_piece(start, end, captured_position)
             self.history.append(move_obj)
             self.turn = 'black' if self.turn == 'white' else 'white'
