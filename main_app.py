@@ -232,6 +232,59 @@ class ChessBoard:
 
         return available_moves
 
+    def is_under_attack(self, position, turn):
+        """Проверяет, находится ли клетка под атакой фигур противника.
+
+        Аргументы:
+            position (tuple): Координаты клетки (x, y).
+            turn (str): Очередь хода ('white' для белых, 'black' для черных).
+
+        Возвращает:
+            bool: True, если клетка под атакой, иначе False.
+        """
+        x, y = position
+        for i in range(8):
+            for j in range(8):
+                piece = self.board[i][j]
+                if piece != ' ' and ((turn == 'white' and piece.islower()) or (turn == 'black' and piece.isupper())):
+                    if self.is_valid_move((j, i), (x, y), 'black' if turn == 'white' else 'white'):
+                        return True
+        return False
+
+    def get_threatened_pieces(self, turn):
+        """Возвращает список фигур, находящихся под угрозой.
+
+        Аргументы:
+            turn (str): Очередь хода ('white' для белых, 'black' для черных).
+
+        Возвращает:
+            list: Список координат фигур, находящихся под угрозой.
+        """
+        threatened_pieces = []
+        for y in range(8):
+            for x in range(8):
+                piece = self.board[y][x]
+                if piece != ' ' and ((turn == 'white' and piece.isupper()) or (turn == 'black' and piece.islower())):
+                    if self.is_under_attack((x, y), turn):
+                        threatened_pieces.append((x, y))
+        return threatened_pieces
+
+    def is_in_check(self, turn):
+        """Проверяет, находится ли король под шахом.
+
+        Аргументы:
+            turn (str): Очередь хода ('white' для белых, 'black' для черных).
+
+        Возвращает:
+            bool: True, если король под шахом, иначе False.
+        """
+        king_symbol = 'K' if turn == 'white' else 'k'
+        for y in range(8):
+            for x in range(8):
+                if self.board[y][x] == king_symbol:
+                    return self.is_under_attack((x, y), turn)
+        return False
+
 
 class ChessGame:
     """Управляет процессом шахматной игры и взаимодействием с игроками.
@@ -275,7 +328,7 @@ class ChessGame:
             if temp_board[y][x] == ' ':
                 temp_board[y][x] = '*'
             else:
-                temp_board[y][x] = temp_board[y][x].upper()  #Подсветка фигур, которые можно взять
+                temp_board[y][x] = temp_board[y][x].upper()  # Подсветка фигур, которые можно взять
 
         #Отображение временной доски
         print("  a b c d e f g h")
@@ -286,12 +339,36 @@ class ChessGame:
             print(8 - i)
         print("  a b c d e f g h")
 
+    def show_threatened_pieces(self):
+        """Отображает фигуры, находящиеся под угрозой, и проверяет наличие шаха."""
+        threatened_pieces = self.board.get_threatened_pieces(self.turn)
+        in_check = self.board.is_in_check(self.turn)
+
+        temp_board = [row.copy() for row in self.board.board]
+
+        #Отметка угрожаемых фигур на временной доске
+        for x, y in threatened_pieces:
+            temp_board[y][x] = temp_board[y][x].upper()  # Подсветка фигур, находящихся под угрозой
+
+        #Отображение временной доски
+        print("  a b c d e f g h")
+        for i in range(8):
+            print(8 - i, end=" ")
+            for j in range(8):
+                print(temp_board[i][j], end=" ")
+            print(8 - i)
+        print("  a b c d e f g h")
+
+        #Вывод информации о шахе
+        if in_check:
+            print(f"Король {'белых' if self.turn == 'white' else 'черных'} под шахом!")
+
     def play(self):
         """Запускает шахматную игру."""
         while True:
             self.board.display()
             print(f"Ход {'белых' if self.turn == 'white' else 'черных'}")
-            move = input("Введите ход (например, 'e2 e4'), 'undo' для отката или 'hint' для подсказки: ").strip().split()
+            move = input("Введите ход (например, 'e2 e4'), 'undo' для отката, 'hint' для подсказки или 'threat' для угроз: ").strip().split()
 
             #Обработка отмены хода
             if move[0] == 'undo':
@@ -310,6 +387,11 @@ class ChessGame:
                     continue
                 start = self.parse_move(move[1])
                 self.show_available_moves(start)
+                continue
+
+            #Обработка показа угроз
+            if move[0] == 'threat':
+                self.show_threatened_pieces()
                 continue
 
             #Проверка корректности ввода
