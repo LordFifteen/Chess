@@ -1,16 +1,3 @@
-"""Простая реализация шахматной игры с проверкой ходов и функцией отмены.
-
-Этот модуль содержит классы для представления шахматной игры, включая доску, ходы
-и состояние игры. Он позволяет двум игрокам играть в шахматы в консоли с поддержкой
-отмены ходов.
-
-Классы:
-    Move: Представляет ход в игре.
-    ChessBoard: Представляет шахматную доску и управляет перемещением фигур.
-    ChessGame: Управляет процессом игры и взаимодействием с игроками.
-"""
-
-
 class Move:
     """Представляет ход в шахматной игре.
 
@@ -36,6 +23,79 @@ class Move:
         self.captured_piece = captured_piece
 
 
+class Wizard:
+    """Фигура Волшебник."""
+
+    def __init__(self, color):
+        self.color = color
+
+    def get_symbol(self):
+        return 'W' if self.color == 'white' else 'w'
+
+    def is_valid_move(self, start, end, board):
+        x1, y1 = start
+        x2, y2 = end
+        dx = abs(x2 - x1)
+        dy = abs(y2 - y1)
+        target = board[y2][x2]
+
+        #Волшебник может перемещаться на одну клетку в любом направлении
+        if dx <= 1 and dy <= 1:
+            return True
+
+        #Волшебник может телепортироваться на любую свободную клетку
+        if target == ' ':
+            return True
+
+        return False
+
+
+class Hunter:
+    """Фигура Ловец."""
+
+    def __init__(self, color):
+        self.color = color
+
+    def get_symbol(self):
+        return 'H' if self.color == 'white' else 'h'
+
+    def is_valid_move(self, start, end, board):
+        x1, y1 = start
+        x2, y2 = end
+        dx = abs(x2 - x1)
+        dy = abs(y2 - y1)
+
+        #Ловец может перемещаться на две клетки по горизонтали или вертикали
+        if (dx == 2 and dy == 0) or (dx == 0 and dy == 2):
+            return True
+
+        return False
+
+
+class Archer:
+    """Фигура Стрелок."""
+
+    def __init__(self, color):
+        self.color = color
+
+    def get_symbol(self):
+        return 'A' if self.color == 'white' else 'a'
+
+    def is_valid_move(self, start, end, board):
+        x1, y1 = start
+        x2, y2 = end
+        dx = abs(x2 - x1)
+        dy = abs(y2 - y1)
+
+        #Стрелок может стрелять на три клетки по горизонтали или вертикали
+        if (dx == 3 and dy == 0) or (dx == 0 and dy == 3):
+            target = board[y2][x2]
+            if target != ' ' and target.islower() != self.color == 'white':
+                return True
+
+        return False
+
+
 class ChessBoard:
     """Представляет шахматную доску и управляет перемещением фигур.
 
@@ -55,6 +115,13 @@ class ChessBoard:
             ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
             ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
         ]
+        #Добавляем новые фигуры
+        self.board[0][2] = 'w'  #Черный волшебник
+        self.board[7][2] = 'W'  #Белый волшебник
+        self.board[0][5] = 'h'  #Черный ловец
+        self.board[7][5] = 'H'  #Белый ловец
+        self.board[0][3] = 'a'  #Черный стрелок
+        self.board[7][3] = 'A'  #Белый стрелок
 
     def display(self):
         """Отображает текущее состояние шахматной доски."""
@@ -112,16 +179,28 @@ class ChessBoard:
         piece = self.board[y1][x1]
         target = self.board[y2][x2]
 
-        # Проверка, что игрок двигает свою фигуру
+        #Проверка, что игрок двигает свою фигуру
         if turn == 'white' and piece.islower():
             return False
         if turn == 'black' and piece.isupper():
             return False
 
-        # Проверка, что игрок не бьет свою фигуру
+        #Проверка, что игрок не бьет свою фигуру
         if target != ' ' and ((turn == 'white' and target.isupper()) or (turn == 'black' and target.islower())):
             return False
 
+        #Проверка допустимости хода для новых фигур
+        if piece.lower() == 'w':
+            wizard = Wizard('white' if piece.isupper() else 'black')
+            return wizard.is_valid_move(start, end, self.board)
+        elif piece.lower() == 'h':
+            hunter = Hunter('white' if piece.isupper() else 'black')
+            return hunter.is_valid_move(start, end, self.board)
+        elif piece.lower() == 'a':
+            archer = Archer('white' if piece.isupper() else 'black')
+            return archer.is_valid_move(start, end, self.board)
+
+        #Стандартные правила для остальных фигур
         return True
 
 
@@ -160,7 +239,7 @@ class ChessGame:
             print(f"Ход {'белых' if self.turn == 'white' else 'черных'}")
             move = input("Введите ход (например, 'e2 e4') или 'undo' для отката: ").strip().split()
 
-            # Обработка отмены хода
+            #Обработка отмены хода
             if move[0] == 'undo':
                 if not self.history:
                     print("Нет ходов для отката.")
@@ -170,12 +249,12 @@ class ChessGame:
                     self.turn = 'black' if self.turn == 'white' else 'white'
                 continue
 
-            # Проверка корректности ввода
+            #Проверка корректности ввода
             if len(move) != 2:
                 print("Некорректный ввод. Попробуйте снова.")
                 continue
 
-            # Преобразование и проверка хода
+            #Преобразование и проверка хода
             start = self.parse_move(move[0])
             end = self.parse_move(move[1])
 
@@ -183,7 +262,7 @@ class ChessGame:
                 print("Недопустимый ход. Попробуйте снова.")
                 continue
 
-            # Выполнение хода
+            #Выполнение хода
             move_obj = self.board.move_piece(start, end)
             self.history.append(move_obj)
             self.turn = 'black' if self.turn == 'white' else 'white'
