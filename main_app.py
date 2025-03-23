@@ -203,6 +203,35 @@ class ChessBoard:
         #Стандартные правила для остальных фигур
         return True
 
+    def get_available_moves(self, start, turn):
+        """Возвращает список доступных ходов для выбранной фигуры.
+
+        Аргументы:
+            start (tuple): Начальная позиция фигуры в виде координат (x, y).
+            turn (str): Очередь хода ('white' для белых, 'black' для черных).
+
+        Возвращает:
+            list: Список доступных ходов в виде координат (x, y).
+        """
+        x1, y1 = start
+        piece = self.board[y1][x1]
+        available_moves = []
+
+        #Проверка, что игрок двигает свою фигуру
+        if turn == 'white' and piece.islower():
+            return available_moves
+        if turn == 'black' and piece.isupper():
+            return available_moves
+
+        #Перебор всех клеток на доске
+        for y2 in range(8):
+            for x2 in range(8):
+                end = (x2, y2)
+                if self.is_valid_move(start, end, turn):
+                    available_moves.append(end)
+
+        return available_moves
+
 
 class ChessGame:
     """Управляет процессом шахматной игры и взаимодействием с игроками.
@@ -232,12 +261,37 @@ class ChessGame:
         y = 8 - int(move[1])
         return x, y
 
+    def show_available_moves(self, start):
+        """Отображает доступные ходы для выбранной фигуры.
+
+        Аргументы:
+            start (tuple): Начальная позиция фигуры в виде координат (x, y).
+        """
+        available_moves = self.board.get_available_moves(start, self.turn)
+        temp_board = [row.copy() for row in self.board.board]
+
+        #Отметка доступных ходов на временной доске
+        for x, y in available_moves:
+            if temp_board[y][x] == ' ':
+                temp_board[y][x] = '*'
+            else:
+                temp_board[y][x] = temp_board[y][x].upper()  #Подсветка фигур, которые можно взять
+
+        #Отображение временной доски
+        print("  a b c d e f g h")
+        for i in range(8):
+            print(8 - i, end=" ")
+            for j in range(8):
+                print(temp_board[i][j], end=" ")
+            print(8 - i)
+        print("  a b c d e f g h")
+
     def play(self):
         """Запускает шахматную игру."""
         while True:
             self.board.display()
             print(f"Ход {'белых' if self.turn == 'white' else 'черных'}")
-            move = input("Введите ход (например, 'e2 e4') или 'undo' для отката: ").strip().split()
+            move = input("Введите ход (например, 'e2 e4'), 'undo' для отката или 'hint' для подсказки: ").strip().split()
 
             #Обработка отмены хода
             if move[0] == 'undo':
@@ -247,6 +301,15 @@ class ChessGame:
                     last_move = self.history.pop()
                     self.board.undo_move(last_move)
                     self.turn = 'black' if self.turn == 'white' else 'white'
+                continue
+
+            #Обработка подсказки
+            if move[0] == 'hint':
+                if len(move) != 2:
+                    print("Некорректный ввод. Введите, например, 'hint e2'.")
+                    continue
+                start = self.parse_move(move[1])
+                self.show_available_moves(start)
                 continue
 
             #Проверка корректности ввода
